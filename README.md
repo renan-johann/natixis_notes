@@ -49,3 +49,55 @@ No console do Katalon, chama:
 ```sh
 utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 ```
+
+
+
+
+```sh
+@Keyword
+static void verifyLoginLanguage(String expectedLanguage) {
+    String title = WebUI.getText(LoginPage.getLoginTitle()).trim()
+    String loginLabel = WebUI.getText(LoginPage.getLoginLabel()).trim()
+    String passwordLabel = WebUI.getText(LoginPage.getPasswordLabel()).trim()
+
+    switch (expectedLanguage.toLowerCase()) {
+        case 'en':
+            assert title == 'INTERNAL USER IDENTIFICATION'
+            assert loginLabel == 'Login'
+            assert passwordLabel == 'Password'
+            break
+
+        case 'fr':
+            assert title == 'IDENTIFICATION UTILISATEUR INTERNE'
+            assert loginLabel == 'Identifiant utilisateur interne'
+            assert passwordLabel == 'Mot de passe'
+            break
+
+        case 'pt':
+            assert title == 'IDENTIFICAÇÃO'
+            assert loginLabel == 'Identificador'
+            assert passwordLabel == 'Senha'
+            break
+
+        default:
+            KeywordUtil.markFailed("Unsupported language: $expectedLanguage")
+    }
+}
+```
+
+```sh
+LoginActions.verifyLoginLanguage('en')
+WebUI.selectOptionByValue(findTestObject(LoginConstants.LANGUAGE_DROPDOWN), 'fr', false)
+WebUI.waitForPageLoad(10)
+LoginActions.verifyLoginLanguage('fr')
+WebUI.selectOptionByValue(findTestObject(LoginConstants.LANGUAGE_DROPDOWN), 'pt', false)
+WebUI.waitForPageLoad(10)
+LoginActions.verifyLoginLanguage('pt')
+
+static TestObject getLoginTitle() {
+    return findTestObject(LoginConstants.LOGIN_TITLE)
+}
+```
+
+validate_login_language_switch
+
