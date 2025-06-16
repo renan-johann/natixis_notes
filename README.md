@@ -119,5 +119,6 @@ validate_login_language_switch
     static final String LOGIN_TITLE       = 'login_page/title_login'
     static final String LOGIN_LABEL       = 'login_page/label_login'
     static final String PASSWORD_LABEL    = 'login_page/label_password'
+    static final String LANGUAGE_DROPDOWN = 'login_page/select_language'
 
 ```
