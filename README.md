@@ -101,3 +101,23 @@ static TestObject getLoginTitle() {
 
 validate_login_language_switch
 
+```sh
+    static TestObject getLoginTitle() {
+        return findTestObject(LoginConstants.LOGIN_TITLE)
+    }
+
+    static TestObject getLoginLabel() {
+        return findTestObject(LoginConstants.LOGIN_LABEL)
+    }
+
+    static TestObject getPasswordLabel() {
+        return findTestObject(LoginConstants.PASSWORD_LABEL)
+    }
+```
+```sh
+    // Labels for language validation
+    static final String LOGIN_TITLE       = 'login_page/title_login'
+    static final String LOGIN_LABEL       = 'login_page/label_login'
+    static final String PASSWORD_LABEL    = 'login_page/label_password'
+
+```
