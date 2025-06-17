@@ -122,3 +122,33 @@ validate_login_language_switch
     static final String LANGUAGE_DROPDOWN = 'login_page/select_language'
 
 ```
+
+```sh
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout P2P project') {
+            steps {
+                cleanWs()
+                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456',
+                    url: 'https://bitbucket-mut.mycloud.intrabpce.fr/scm/gi5/p2p.git',
+                    branch: 'dev'  // <- Altera aqui para o nome real do teu branch
+            }
+        }
+
+        stage('Run Katalon Login Suite') {
+            steps {
+                bat '"C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe" -noSplash -runMode=console -projectPath="C:\\path\\to\\your\\project\\p2p.prj" -retry=0 -testSuitePath="Test Suites/login/validate_login_language_switch" -executionProfile="default" -browserType="Chrome" --config -reportFolder="Reports" -reportFileName="report"'
+            }
+        }
+    }
+
+    post {
+        always {
+            junit '**/Reports/**/*.xml'
+        }
+    }
+}
+
+```
