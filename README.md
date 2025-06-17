@@ -54,10 +54,10 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 pipeline {
-    agent any
+    agent { label 'GIS_SWDCFRNXGI55817' } // mesmo label da VM em uso
 
     stages {
-        stage('Checkout P2P project') {
+        stage('Checkout P2P Project') {
             steps {
                 cleanWs()
                 git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456',
@@ -66,16 +66,27 @@ pipeline {
             }
         }
 
-        stage('Run Katalon Login Suite') {
+        stage('Run Login Suite') {
             steps {
-                bat '"C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe" -noSplash -runMode=console -projectPath="C:\\path\\to\\your\\project\\p2p.prj" -retry=0 -testSuitePath="Test Suites/login/validate_login_language_switch" -executionProfile="default" -browserType="Chrome" --config -reportFolder="Reports" -reportFileName="report"'
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    executeKatalon executeArgs: ''' 
+                        -projectPath="D:/jenkins/work/workspace/GI5/P2P Project/P2P" 
+                        -browserType="Chrome" 
+                        -testSuiteCollectionPath="Test Suites/login/Login TSC" 
+                        -noSplash -runMode=console 
+                    ''',
+                    location: 'C:/Automation/Runtime/Katalon_Studio_Engine_Windows_64-8.1.0',
+                    version: '',
+                    x11Display: '',
+                    xvfbConfiguration: ''
+                }
             }
         }
     }
 
     post {
         always {
-            junit '**/Reports/**/*.xml'
+            junit '**/Reports/**/JUnit_Report.xml'
         }
     }
 }
