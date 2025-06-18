@@ -54,17 +54,21 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 pipeline {
-    agent any  // Isso vai usar qualquer node disponível
+    agent { label 'GIS_SWDCFRNXGI55817' }
+
     stages {
         stage('Checkout P2P project') {
             steps {
                 cleanWs()
-                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456', url: 'https://bitbucket-mutt.mycloud.intrabpce.fr/scm/gi5/p2p.git', branch: 'dev'
+                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456',
+                    url: 'https://bitbucket-mut.mycloud.intrabpce.fr/scm/gi5/p2p.git',
+                    branch: 'dev'
             }
         }
+
         stage('Run Katalon Login Suite') {
             steps {
-                bat "C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe -noSplash -runMode=console"
+                bat "C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe -noSplash -runMode=console -projectPath=\"D:\\jenkins\\work\\workspace\\GI5\\P2P Project\\p2p-testes\""
             }
         }
     }
