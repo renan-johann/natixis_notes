@@ -54,39 +54,18 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 pipeline {
-    agent { label 'GIS_SWDCFRNXGI55817' } // mesmo label da VM em uso
-
+    agent any  // Isso vai usar qualquer node disponível
     stages {
-        stage('Checkout P2P Project') {
+        stage('Checkout P2P project') {
             steps {
                 cleanWs()
-                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456',
-                    url: 'https://bitbucket-mut.mycloud.intrabpce.fr/scm/gi5/p2p.git',
-                    branch: 'dev'
+                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456', url: 'https://bitbucket-mutt.mycloud.intrabpce.fr/scm/gi5/p2p.git', branch: 'dev'
             }
         }
-
-        stage('Run Login Suite') {
+        stage('Run Katalon Login Suite') {
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    executeKatalon executeArgs: ''' 
-                        -projectPath="D:/jenkins/work/workspace/GI5/P2P Project/P2P" 
-                        -browserType="Chrome" 
-                        -testSuiteCollectionPath="Test Suites/login/Login TSC" 
-                        -noSplash -runMode=console 
-                    ''',
-                    location: 'C:/Automation/Runtime/Katalon_Studio_Engine_Windows_64-8.1.0',
-                    version: '',
-                    x11Display: '',
-                    xvfbConfiguration: ''
-                }
+                bat "C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe -noSplash -runMode=console"
             }
-        }
-    }
-
-    post {
-        always {
-            junit '**/Reports/**/JUnit_Report.xml'
         }
     }
 }
