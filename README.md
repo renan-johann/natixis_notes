@@ -53,24 +53,42 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 
 ```sh
-pipeline {
-    agent { label 'GIS_SWDCFRNXGI55817' }
+# Build and cache folders
+.gradle/
+bin/
+build/
+output/
+!output/.gitkeep
 
-    stages {
-        stage('Checkout P2P project') {
-            steps {
-                cleanWs()
-                git credentialsId: '40130d40-5b6c-4c9d-9314-ae82746b7456',
-                    url: 'https://bitbucket-mut.mycloud.intrabpce.fr/scm/gi5/p2p.git',
-                    branch: 'dev'
-            }
-        }
+# Generated reports and libraries
+Reports/
+Libs/
 
-        stage('Run Katalon Login Suite') {
-            steps {
-                bat "C:\\Automation\\Runtime\\Katalon_Studio_Engine_Windows_64-8.1.0\\katalonc.exe -noSplash -runMode=console -projectPath=\"D:\\jenkins\\work\\workspace\\GI5\\P2P Project\\p2p-testes\""
-            }
-        }
-    }
-}
+# Local and temporary files
+.cache/
+.settings/
+.classpath
+.project
+
+# Internal Katalon files
+.settings/
+.settings/internal/com.kms.katalon.composer.testcase.properties
+
+# Logs and runtime temp files
+*.log
+*.tmp
+
+# License and local configuration files
+.settings/internal/
+.katalon/
+*.lic
+
+# External execution folders (if used)
+Executions/
+
+# OS/editor temporary files
+*.swp
+*.bak
+.DS_Store
+Thumbs.db
 ```
