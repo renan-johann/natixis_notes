@@ -53,42 +53,45 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 
 ```sh
-# Build and cache folders
+# ----------------------------------------------------
+# Build, cache, and IDE metadata
+# ----------------------------------------------------
 .gradle/
+.build/
 bin/
-build/
-output/
-!output/.gitkeep
-
-# Generated reports and libraries
-Reports/
-Libs/
-
-# Local and temporary files
-.cache/
 .settings/
+.cache/
 .classpath
 .project
+build.gradle
+console.properties
 
-# Internal Katalon files
-.settings/
+# ----------------------------------------------------
+# Test execution outputs and runtime files
+# ----------------------------------------------------
+Reports/
+output/
+LastRun.xlsx
+
+# ----------------------------------------------------
+# Katalon internal temp/test metadata
+# ----------------------------------------------------
+Libs/
+!output/.gitkeep
 .settings/internal/com.kms.katalon.composer.testcase.properties
+.cache/Keywords/GetLanguage
 
-# Logs and runtime temp files
+# ----------------------------------------------------
+# System-specific or IDE-specific files (optional)
+# ----------------------------------------------------
 *.log
 *.tmp
-
-# License and local configuration files
-.settings/internal/
-.katalon/
-*.lic
-
-# External execution folders (if used)
-Executions/
-
-# OS/editor temporary files
-*.swp
-*.bak
 .DS_Store
 Thumbs.db
+
+# ----------------------------------------------------
+# Git metadata (keep .git directory itself)
+# ----------------------------------------------------
+*.swp
+*.swo
 ```
