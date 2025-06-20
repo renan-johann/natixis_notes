@@ -95,3 +95,16 @@ Thumbs.db
 *.swp
 *.swo
 ```
+
+
+Title:
+Maintenance of Test Cases in BPCE_SI_PR Folder
+
+Description:
+Perform maintenance and updates on the following test cases located in the BPCE_SI_PR folder:
+	•	approver1_validation
+	•	generate_PR_Non_PRTM
+	•	generate_PR_non_PRTM_case2
+	•	P2P_specialist_validation
+
+The goal is to review and adjust these test cases to ensure proper execution and alignment with the current system behavior. This may include updating test data, fixing broken steps, refactoring logic, or syncing with recent functional changes.
