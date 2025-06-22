@@ -117,7 +117,7 @@ class TestListener {
         }
 
         KeywordUtil.logInfo("⏱ Total Suite Duration: ${totalDuration}s")
-        KeywordUtil.logInfo("🔚 END Test Suite")
+        KeywordUtil.logInfo("🏁 END Test Suite")
     }
 }
 
