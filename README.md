@@ -53,58 +53,57 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 
 ```sh
-# ----------------------------------------------------
-# Build, cache, and IDE metadata
-# ----------------------------------------------------
-.gradle/
-.build/
-bin/
-.settings/
-.cache/
-.classpath
-.project
-build.gradle
-console.properties
+class TestListener {
 
-# ----------------------------------------------------
-# Test execution outputs and runtime files
-# ----------------------------------------------------
-Reports/
-output/
-LastRun.xlsx
+    /**
+     * Variável para guardar o nome do teste em execução
+     */
+    static String currentTestCaseName = ""
 
-# ----------------------------------------------------
-# Katalon internal temp/test metadata
-# ----------------------------------------------------
-Libs/
-!output/.gitkeep
-.settings/internal/com.kms.katalon.composer.testcase.properties
-.cache/Keywords/GetLanguage
+    /**
+     * Executa antes da suíte de testes iniciar
+     */
+    @BeforeTestSuite
+    def beforeTestSuite() {
+        WebUI.openBrowser('') // Abre navegador vazio
+        WebUI.navigateToUrl('https://harmoni.p2p.dev.nporeto.com?lang=en') // Vai pra URL com idioma inglês
+        WebUI.waitForPageLoad(GlobalVariable.defaultTimeout) // Espera página carregar com timeout global
+        WebUI.maximizeWindow() // Maximiza janela
+    }
 
-# ----------------------------------------------------
-# System-specific or IDE-specific files (optional)
-# ----------------------------------------------------
-*.log
-*.tmp
-.DS_Store
-Thumbs.db
+    /**
+     * Executa depois que a suíte de testes terminar
+     */
+    @AfterTestSuite
+    def afterTestSuite() {
+        WebUI.closeBrowser() // Fecha o navegador no final da suíte
+    }
 
-# ----------------------------------------------------
-# Git metadata (keep .git directory itself)
-# ----------------------------------------------------
-*.swp
-*.swo
+    /**
+     * Captura o nome do teste antes de cada Test Case rodar
+     */
+    @BeforeTestCase
+    def beforeTestCase(TestCaseContext testCaseContext) {
+        currentTestCaseName = testCaseContext.getTestCaseId().split('/').last()
+        KeywordUtil.logInfo("🔍 Starting Test Case: " + currentTestCaseName)
+    }
+
+    /**
+     * Executa após cada Test Case. Tira screenshot e salva em pasta customizada.
+     */
+    @AfterTestCase
+    def afterTestCase(TestCaseContext testCaseContext) {
+        def status = testCaseContext.getTestCaseStatus() // PASSED ou FAILED
+        def timestamp = new Date().format("yyyyMMdd_HHmmss")
+
+        def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
+        new File(reportPath).mkdirs() // Cria pasta se não existir
+
+        def screenshotPath = reportPath + "${currentTestCaseName}_${status}_${timestamp}.png"
+        WebUI.takeScreenshot(screenshotPath)
+
+        KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
+    }
+}
 ```
 
-
-Title:
-Maintenance of Test Cases in BPCE_SI_PR Folder
-
-Description:
-Perform maintenance and updates on the following test cases located in the BPCE_SI_PR folder:
-	•	approver1_validation
-	•	generate_PR_Non_PRTM
-	•	generate_PR_non_PRTM_case2
-	•	P2P_specialist_validation
-
-The goal is to review and adjust these test cases to ensure proper execution and alignment with the current system behavior. This may include updating test data, fixing broken steps, refactoring logic, or syncing with recent functional changes.
