@@ -55,43 +55,68 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 ```sh
 class TestListener {
 
-    static String currentTestName = ""
+    static String currentTestCaseName = ""
+    static long testStartTime = 0
+    static long suiteStartTime = 0
+
+    // Armazena os resultados detalhados
+    static List<Map> testResults = []
+
+    @BeforeTestSuite
+    def beforeTestSuite(TestSuiteContext testSuiteContext) {
+        suiteStartTime = System.currentTimeMillis()
+    }
 
     @BeforeTestCase
     def beforeTestCase(TestCaseContext testCaseContext) {
+        currentTestCaseName = testCaseContext.getTestCaseId().tokenize('/').last()
+        testStartTime = System.currentTimeMillis()
+
+        KeywordUtil.logInfo("🚀 Starting Test Case: " + currentTestCaseName)
+
         WebUI.openBrowser('')
         WebUI.navigateToUrl(GlobalVariable.Link_EN)
-        WebUI.waitForPageLoad(GlobalVariable.WaitForLoadTimeout)
+        WebUI.waitForPageLoad(GlobalVariable.timeout)
         WebUI.maximizeWindow()
-
-        currentTestName = testCaseContext.getTestCaseId().tokenize('/').last()
-        KeywordUtil.logInfo("🟢 Starting Test Case: " + currentTestName)
     }
 
     @AfterTestCase
     def afterTestCase(TestCaseContext testCaseContext) {
-        def status = testCaseContext.getTestCaseStatus()
+        long testEndTime = System.currentTimeMillis()
+        long duration = (testEndTime - testStartTime) / 1000
+
+        String status = testCaseContext.getTestCaseStatus()
         def timestamp = new Date().format("yyyyMMdd_HHmmss")
 
-        def reportPath = RunConfiguration.getProjectDir() + "/Reports/Screenshots/"
+        def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
         new File(reportPath).mkdirs()
-
-        def screenshotPath = "${reportPath}${currentTestName}_${status}_${timestamp}.png"
+        def screenshotPath = "${reportPath}${currentTestCaseName}_${status}_${timestamp}.png"
         WebUI.takeScreenshot(screenshotPath)
 
         KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
 
-        WebUI.closeBrowser()
-    }
+        // Adiciona o resultado do teste na lista
+        testResults.add([
+            name: currentTestCaseName,
+            status: status,
+            duration: duration
+        ])
 
-    @BeforeTestSuite
-    def beforeTestSuite(TestSuiteContext testSuiteContext) {
-        KeywordUtil.logInfo("🚀 Starting Test Suite: " + testSuiteContext.getTestSuiteId())
+        WebUI.closeBrowser()
     }
 
     @AfterTestSuite
     def afterTestSuite(TestSuiteContext testSuiteContext) {
-        KeywordUtil.logInfo("🏁 Finished Test Suite: " + testSuiteContext.getTestSuiteId())
+        long totalDuration = (System.currentTimeMillis() - suiteStartTime) / 1000
+
+        KeywordUtil.logInfo("📋 Test Suite Summary:")
+
+        testResults.each { result ->
+            def emoji = result.status == 'PASSED' ? "✅" : "❌"
+            KeywordUtil.logInfo("${emoji} ${result.name} — ${result.status} (${result.duration}s)")
+        }
+
+        KeywordUtil.logInfo("⏱️ Total Suite Duration: ${totalDuration}s")
     }
 }
 ```
