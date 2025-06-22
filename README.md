@@ -54,19 +54,72 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-def totalSeconds = (long)(durationMs / 1000)
-def seconds = totalSeconds % 60
-def minutes = (totalSeconds / 60) % 60
-def hours = (totalSeconds / 3600)
+class TestListener {
 
-def formattedDuration = ""
-if (hours > 0) {
-    formattedDuration += "${hours} h "
+    static String currentTestCaseName = ""
+    static long testCaseStartTime = 0L
+    static long suiteStartTime = 0L
+    static List<Map> testResults = []
+
+    @BeforeTestSuite
+    def beforeTestSuite(TestSuiteContext testSuiteContext) {
+        suiteStartTime = System.currentTimeMillis()
+        KeywordUtil.logInfo("🟢 Test Suite Started")
+    }
+
+    @BeforeTestCase
+    def beforeTestCase(TestCaseContext testCaseContext) {
+        testCaseStartTime = System.currentTimeMillis()
+
+        // Abre o navegador e navega até a página inicial
+        WebUI.openBrowser('')
+        WebUI.navigateToUrl(GlobalVariable.Link_EN)
+        WebUI.waitForPageLoad(GlobalVariable.defaultTimeout)
+        WebUI.maximizeWindow()
+
+        currentTestCaseName = testCaseContext.getTestCaseId().tokenize('/').last()
+        KeywordUtil.logInfo("▶️ Starting Test Case: " + currentTestCaseName)
+    }
+
+    @AfterTestCase
+    def afterTestCase(TestCaseContext testCaseContext) {
+        def status = testCaseContext.getTestCaseStatus()
+        def timestamp = new Date().format("yyyyMMdd_HHmmss")
+
+        // Caminho para salvar o screenshot
+        def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
+        new File(reportPath).mkdirs()
+        def screenshotPath = "${reportPath}${currentTestCaseName}_${status}_${timestamp}.png"
+
+        // Captura de tela após o teste
+        WebUI.takeScreenshot(screenshotPath)
+
+        KeywordUtil.logInfo("✅ ${currentTestCaseName} - ${status}")
+        KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
+
+        // Adiciona aos resultados
+        testResults << [
+            name: currentTestCaseName,
+            status: status
+        ]
+
+        WebUI.closeBrowser()
+    }
+
+    @AfterTestSuite
+    def afterTestSuite(TestSuiteContext testSuiteContext) {
+        long totalDuration = (System.currentTimeMillis() - suiteStartTime) / 1000
+
+        KeywordUtil.logInfo("📊 Test Suite Summary:")
+        testResults.each { result ->
+            def emoji = result.status == 'PASSED' ? "✅" : "❌"
+            KeywordUtil.logInfo("${emoji} ${result.name} - ${result.status}")
+        }
+
+        KeywordUtil.logInfo("⏱ Total Suite Duration: ${totalDuration}s")
+        KeywordUtil.logInfo("🔚 END Test Suite")
+    }
 }
-if (minutes > 0 || hours > 0) {
-    formattedDuration += "${minutes} min "
-}
-formattedDuration += "${seconds} s"
 
 ```
 
