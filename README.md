@@ -54,27 +54,19 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-@AfterTestCase
-def afterTestCase(TestCaseContext testCaseContext) {
-    def status = testCaseContext.getTestCaseStatus()
-    def timestamp = new Date().format("yyyyMMdd_HHmmss")
-    def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
-    new File(reportPath).mkdirs()
+def totalSeconds = (long)(durationMs / 1000)
+def seconds = totalSeconds % 60
+def minutes = (totalSeconds / 60) % 60
+def hours = (totalSeconds / 3600)
 
-    def screenshotPath = "${reportPath}${currentTestCaseName}_${status}_${timestamp}.png"
-    WebUI.takeScreenshot(screenshotPath)
-
-    long durationMs = testCaseContext.getEndTime() - testCaseContext.getStartTime()
-    long seconds = (durationMs / 1000) % 60
-    long minutes = (durationMs / 1000) / 60
-
-    def formattedDuration = minutes > 0 ? "${minutes} min ${seconds} s" : "${seconds} s"
-
-    KeywordUtil.logInfo("✅ ${currentTestCaseName} — ${status} (${formattedDuration})")
-    KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
-
-    WebUI.closeBrowser()
+def formattedDuration = ""
+if (hours > 0) {
+    formattedDuration += "${hours} h "
 }
+if (minutes > 0 || hours > 0) {
+    formattedDuration += "${minutes} min "
+}
+formattedDuration += "${seconds} s"
 
 ```
 
