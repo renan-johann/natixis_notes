@@ -55,54 +55,43 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 ```sh
 class TestListener {
 
-    /**
-     * Variável para guardar o nome do teste em execução
-     */
-    static String currentTestCaseName = ""
+    static String currentTestName = ""
 
-    /**
-     * Executa antes da suíte de testes iniciar
-     */
-    @BeforeTestSuite
-    def beforeTestSuite() {
-        WebUI.openBrowser('') // Abre navegador vazio
-        WebUI.navigateToUrl('https://harmoni.p2p.dev.nporeto.com?lang=en') // Vai pra URL com idioma inglês
-        WebUI.waitForPageLoad(GlobalVariable.defaultTimeout) // Espera página carregar com timeout global
-        WebUI.maximizeWindow() // Maximiza janela
-    }
-
-    /**
-     * Executa depois que a suíte de testes terminar
-     */
-    @AfterTestSuite
-    def afterTestSuite() {
-        WebUI.closeBrowser() // Fecha o navegador no final da suíte
-    }
-
-    /**
-     * Captura o nome do teste antes de cada Test Case rodar
-     */
     @BeforeTestCase
     def beforeTestCase(TestCaseContext testCaseContext) {
-        currentTestCaseName = testCaseContext.getTestCaseId().split('/').last()
-        KeywordUtil.logInfo("🔍 Starting Test Case: " + currentTestCaseName)
+        WebUI.openBrowser('')
+        WebUI.navigateToUrl(GlobalVariable.Link_EN)
+        WebUI.waitForPageLoad(GlobalVariable.WaitForLoadTimeout)
+        WebUI.maximizeWindow()
+
+        currentTestName = testCaseContext.getTestCaseId().tokenize('/').last()
+        KeywordUtil.logInfo("🟢 Starting Test Case: " + currentTestName)
     }
 
-    /**
-     * Executa após cada Test Case. Tira screenshot e salva em pasta customizada.
-     */
     @AfterTestCase
     def afterTestCase(TestCaseContext testCaseContext) {
-        def status = testCaseContext.getTestCaseStatus() // PASSED ou FAILED
+        def status = testCaseContext.getTestCaseStatus()
         def timestamp = new Date().format("yyyyMMdd_HHmmss")
 
-        def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
-        new File(reportPath).mkdirs() // Cria pasta se não existir
+        def reportPath = RunConfiguration.getProjectDir() + "/Reports/Screenshots/"
+        new File(reportPath).mkdirs()
 
-        def screenshotPath = reportPath + "${currentTestCaseName}_${status}_${timestamp}.png"
+        def screenshotPath = "${reportPath}${currentTestName}_${status}_${timestamp}.png"
         WebUI.takeScreenshot(screenshotPath)
 
         KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
+
+        WebUI.closeBrowser()
+    }
+
+    @BeforeTestSuite
+    def beforeTestSuite(TestSuiteContext testSuiteContext) {
+        KeywordUtil.logInfo("🚀 Starting Test Suite: " + testSuiteContext.getTestSuiteId())
+    }
+
+    @AfterTestSuite
+    def afterTestSuite(TestSuiteContext testSuiteContext) {
+        KeywordUtil.logInfo("🏁 Finished Test Suite: " + testSuiteContext.getTestSuiteId())
     }
 }
 ```
