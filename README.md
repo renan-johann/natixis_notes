@@ -54,71 +54,85 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-class TestListener {
+public class Common {
 
-    static String currentTestCaseName = ""
-    static long testCaseStartTime = 0L
-    static long suiteStartTime = 0L
-    static List<Map> testResults = []
-
-    @BeforeTestSuite
-    def beforeTestSuite(TestSuiteContext testSuiteContext) {
-        suiteStartTime = System.currentTimeMillis()
-        KeywordUtil.logInfo("🟢 Test Suite Started")
+    /**
+     * Waits until the element is visible, then fills it with the given text.
+     * @param objectPath the path to the Test Object
+     * @param text the text to enter into the element
+     * @param timeout (optional) how many seconds to wait for the element to be visible (default = 5)
+     */
+    @Keyword
+    def waitAndFill(String objectPath, String text, int timeout = 5) {
+        def testObject = findTestObject(objectPath)
+        WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+        WebUI.setText(testObject, text)
     }
 
-    @BeforeTestCase
-    def beforeTestCase(TestCaseContext testCaseContext) {
-        testCaseStartTime = System.currentTimeMillis()
-
-        // Abre o navegador e navega até a página inicial
-        WebUI.openBrowser('')
-        WebUI.navigateToUrl(GlobalVariable.Link_EN)
-        WebUI.waitForPageLoad(GlobalVariable.defaultTimeout)
-        WebUI.maximizeWindow()
-
-        currentTestCaseName = testCaseContext.getTestCaseId().tokenize('/').last()
-        KeywordUtil.logInfo("▶️ Starting Test Case: " + currentTestCaseName)
+    /**
+     * Waits until the element is visible and clickable, then clicks it.
+     * Accepts dynamic parameters for the Test Object if needed.
+     * @param objectPath the path to the Test Object
+     * @param params (optional) map of dynamic parameters to be injected into the Test Object
+     * @param timeout (optional) how many seconds to wait for the element to be ready (default = 10)
+     */
+    @Keyword
+    def waitAndClick(String objectPath, Map params = null, int timeout = 10) {
+        def testObject = params ? findTestObject(objectPath, params) : findTestObject(objectPath)
+        WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+        WebUI.waitForElementClickable(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+        WebUI.click(testObject)
     }
 
-    @AfterTestCase
-    def afterTestCase(TestCaseContext testCaseContext) {
-        def status = testCaseContext.getTestCaseStatus()
-        def timestamp = new Date().format("yyyyMMdd_HHmmss")
+/**
+ * Waits until the element is present in the DOM.
+ * @param objectPath path to the Test Object
+ * @param timeout (optional) time to wait in seconds (default = 5)
+ */
+@Keyword
+def waitForElementPresent(String objectPath, int timeout = 5) {
+    def testObject = findTestObject(objectPath)
+    WebUI.waitForElementPresent(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+}
 
-        // Caminho para salvar o screenshot
-        def reportPath = RunConfiguration.getProjectDir() + "/Reports/_Screenshots/"
-        new File(reportPath).mkdirs()
-        def screenshotPath = "${reportPath}${currentTestCaseName}_${status}_${timestamp}.png"
+/**
+ * Returns the text of a visible element.
+ * @param objectPath path to the Test Object
+ * @param timeout (optional) time to wait for visibility (default = 5)
+ * @return String text of the element
+ */
+@Keyword
+def getElementText(String objectPath, int timeout = 5) {
+    def testObject = findTestObject(objectPath)
+    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+    return WebUI.getText(testObject)
+}
 
-        // Captura de tela após o teste
-        WebUI.takeScreenshot(screenshotPath)
+/**
+ * Verifies that the text of a visible element matches the expected text.
+ * @param objectPath path to the Test Object
+ * @param expectedText the text you expect to see
+ * @param timeout (optional) time to wait for visibility (default = 5)
+ */
+@Keyword
+def verifyElementText(String objectPath, String expectedText, int timeout = 5) {
+    def testObject = findTestObject(objectPath)
+    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+    WebUI.verifyMatch(WebUI.getText(testObject), expectedText, false, FailureHandling.STOP_ON_FAILURE)
+}
 
-        KeywordUtil.logInfo("✅ ${currentTestCaseName} - ${status}")
-        KeywordUtil.logInfo("📸 Screenshot saved: " + screenshotPath)
-
-        // Adiciona aos resultados
-        testResults << [
-            name: currentTestCaseName,
-            status: status
-        ]
-
-        WebUI.closeBrowser()
-    }
-
-    @AfterTestSuite
-    def afterTestSuite(TestSuiteContext testSuiteContext) {
-        long totalDuration = (System.currentTimeMillis() - suiteStartTime) / 1000
-
-        KeywordUtil.logInfo("📊 Test Suite Summary:")
-        testResults.each { result ->
-            def emoji = result.status == 'PASSED' ? "✅" : "❌"
-            KeywordUtil.logInfo("${emoji} ${result.name} - ${result.status}")
-        }
-
-        KeywordUtil.logInfo("⏱ Total Suite Duration: ${totalDuration}s")
-        KeywordUtil.logInfo("🏁 END Test Suite")
-    }
+/**
+ * Scrolls to the element and clicks on it.
+ * @param objectPath path to the Test Object
+ * @param timeout (optional) time to wait (default = 5)
+ */
+@Keyword
+def scrollToAndClick(String objectPath, int timeout = 5) {
+    def testObject = findTestObject(objectPath)
+    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
+    WebUI.scrollToElement(testObject, timeout)
+    WebUI.click(testObject)
+}
 }
 
 ```
