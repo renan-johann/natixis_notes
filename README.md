@@ -54,85 +54,38 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-public class Common {
+// Importa o arquivo de dados
+TestData testData = findTestData('LoginConstants.CREDENTIALS_DATA_SHEET')
 
-    /**
-     * Waits until the element is visible, then fills it with the given text.
-     * @param objectPath the path to the Test Object
-     * @param text the text to enter into the element
-     * @param timeout (optional) how many seconds to wait for the element to be visible (default = 5)
-     */
-    @Keyword
-    def waitAndFill(String objectPath, String text, int timeout = 5) {
-        def testObject = findTestObject(objectPath)
-        WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-        WebUI.setText(testObject, text)
+// Lista de índices que você quer testar
+List<Integer> userIndexes = [2, 4, 5, 8, 10]
+
+for (int rowIndex : userIndexes) {
+    // Lê os dados do usuário
+    String username = testData.getValue(2, rowIndex)
+    String password = testData.getValue(3, rowIndex)
+    String role     = testData.getValue(4, rowIndex)
+
+    println "🔄 Testing user at row $rowIndex → Username: $username | Role: $role"
+
+    // Faz login com os dados
+    LoginActions.LoginUser(username, password)
+
+    // Ação do teste
+    UIActions.waitAndClick('menu_harmoni/buttonCatalogs')
+
+    boolean messageImport = WebUI.verifyElementNotPresent(findTestObject('menu_harmoni/buttonImportCatalogs'), 4)
+
+    if (messageImport == false) {
+        KeywordUtil.markFailed("❌ User '$role' should NOT have access to Import Catalogs")
+        WebUI.takeScreenshot(RunConfiguration.getReportFolder() + "/Evidences/ErrorUnauthorizedProfilesCanImportCatalogs_${role.replaceAll('\\s+', '_')}.png")
+    } else {
+        KeywordUtil.markPassed("✅ User '$role' correctly blocked from Import Catalogs")
+        WebUI.takeScreenshot(RunConfiguration.getReportFolder() + "/Evidences/UnauthorizedProfilesCantImportCatalogs_${role.replaceAll('\\s+', '_')}.png")
     }
 
-    /**
-     * Waits until the element is visible and clickable, then clicks it.
-     * Accepts dynamic parameters for the Test Object if needed.
-     * @param objectPath the path to the Test Object
-     * @param params (optional) map of dynamic parameters to be injected into the Test Object
-     * @param timeout (optional) how many seconds to wait for the element to be ready (default = 10)
-     */
-    @Keyword
-    def waitAndClick(String objectPath, Map params = null, int timeout = 10) {
-        def testObject = params ? findTestObject(objectPath, params) : findTestObject(objectPath)
-        WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-        WebUI.waitForElementClickable(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-        WebUI.click(testObject)
-    }
-
-/**
- * Waits until the element is present in the DOM.
- * @param objectPath path to the Test Object
- * @param timeout (optional) time to wait in seconds (default = 5)
- */
-@Keyword
-def waitForElementPresent(String objectPath, int timeout = 5) {
-    def testObject = findTestObject(objectPath)
-    WebUI.waitForElementPresent(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-}
-
-/**
- * Returns the text of a visible element.
- * @param objectPath path to the Test Object
- * @param timeout (optional) time to wait for visibility (default = 5)
- * @return String text of the element
- */
-@Keyword
-def getElementText(String objectPath, int timeout = 5) {
-    def testObject = findTestObject(objectPath)
-    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-    return WebUI.getText(testObject)
-}
-
-/**
- * Verifies that the text of a visible element matches the expected text.
- * @param objectPath path to the Test Object
- * @param expectedText the text you expect to see
- * @param timeout (optional) time to wait for visibility (default = 5)
- */
-@Keyword
-def verifyElementText(String objectPath, String expectedText, int timeout = 5) {
-    def testObject = findTestObject(objectPath)
-    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-    WebUI.verifyMatch(WebUI.getText(testObject), expectedText, false, FailureHandling.STOP_ON_FAILURE)
-}
-
-/**
- * Scrolls to the element and clicks on it.
- * @param objectPath path to the Test Object
- * @param timeout (optional) time to wait (default = 5)
- */
-@Keyword
-def scrollToAndClick(String objectPath, int timeout = 5) {
-    def testObject = findTestObject(objectPath)
-    WebUI.waitForElementVisible(testObject, timeout, FailureHandling.STOP_ON_FAILURE)
-    WebUI.scrollToElement(testObject, timeout)
-    WebUI.click(testObject)
-}
+    // Volta para o login (faz o "logout")
+    WebUI.navigateToUrl(GlobalVariable.LOGIN_URL)
 }
 
 ```
