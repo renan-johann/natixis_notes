@@ -54,29 +54,17 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-List<Integer> userIndexes = [5, 2, 10, 3, 12, 16, 4, 1, 17, 6, 14]
-String evidencePath = RunConfiguration.getReportFolder() + "/Evidences/"
-def testData = findTestData(LoginConstants.CREDENTIALS_DATA_SHEET)
+String userName = testData.getValue(1, rowIndex)
+String role     = testData.getValue(4, rowIndex)  // 4ª coluna = Role
 
-for (int rowIndex : userIndexes) {
-    String userName = testData.getValue(1, rowIndex)
+// ...
 
-    LoginActions.LoginUser(LoginConstants.CREDENTIALS_DATA_SHEET, rowIndex)
-
-    WebUI.navigateToUrl(GlobalVariable.HOMEPAGE_URL)
-    UIActions.waitAndClick('menu_harmoni/buttonCatalogs')
-
-    boolean messageImport = UIActions.waitForElementPresent('menu_harmoni/buttonImportCatalogs')
-
-    if (messageImport) {
-        KeywordUtil.markFailed("❌ User ${userName} should NOT have access to Import Catalogs")
-        WebUI.takeScreenshot(evidencePath + "Error_${userName}_CanImportCatalogs.png")
-    } else {
-        KeywordUtil.markPassed("✅ User ${userName} correctly blocked from Import Catalogs")
-        WebUI.takeScreenshot(evidencePath + "Unauthorized_${userName}_CantImportCatalogs.png")
-    }
-
-    WebUI.navigateToUrl(GlobalVariable.LOGIN_URL) // Faz logout
+if (messageImport) {
+    KeywordUtil.markFailed("❌ User \"${userName}\" (${role}) SHOULD NOT have access to Import Catalogs")
+    WebUI.takeScreenshot(evidencePath + "ERROR_${userName}_${role}_CanImportCatalogs.png")
+} else {
+    KeywordUtil.markPassed("✅ User \"${userName}\" (${role}) correctly blocked from Import Catalogs")
+    WebUI.takeScreenshot(evidencePath + "Unauthorized_${userName}_${role}_CantImportCatalogs.png")
 }
 
 ```
