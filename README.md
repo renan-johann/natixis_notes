@@ -54,38 +54,20 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-// Importa o arquivo de dados
-TestData testData = findTestData('LoginConstants.CREDENTIALS_DATA_SHEET')
+for (int row = 1; row <= rows_count; row++) {
+    TestObject cell = new TestObject('articleCheckRow')
+    cell.addProperty('xpath', ConditionType.EQUALS, "//*[@id='body_x_grid_grd']//tbody/tr[" + row + "]/td[contains(text(),'${articleCode}')]")
 
-// Lista de índices que você quer testar
-List<Integer> userIndexes = [2, 4, 5, 8, 10]
+    if (WebUI.verifyElementPresent(cell, 2, FailureHandling.OPTIONAL)) {
+        String message = WebUI.getText(cell)
 
-for (int rowIndex : userIndexes) {
-    // Lê os dados do usuário
-    String username = testData.getValue(2, rowIndex)
-    String password = testData.getValue(3, rowIndex)
-    String role     = testData.getValue(4, rowIndex)
-
-    println "🔄 Testing user at row $rowIndex → Username: $username | Role: $role"
-
-    // Faz login com os dados
-    LoginActions.LoginUser(username, password)
-
-    // Ação do teste
-    UIActions.waitAndClick('menu_harmoni/buttonCatalogs')
-
-    boolean messageImport = WebUI.verifyElementNotPresent(findTestObject('menu_harmoni/buttonImportCatalogs'), 4)
-
-    if (messageImport == false) {
-        KeywordUtil.markFailed("❌ User '$role' should NOT have access to Import Catalogs")
-        WebUI.takeScreenshot(RunConfiguration.getReportFolder() + "/Evidences/ErrorUnauthorizedProfilesCanImportCatalogs_${role.replaceAll('\\s+', '_')}.png")
-    } else {
-        KeywordUtil.markPassed("✅ User '$role' correctly blocked from Import Catalogs")
-        WebUI.takeScreenshot(RunConfiguration.getReportFolder() + "/Evidences/UnauthorizedProfilesCantImportCatalogs_${role.replaceAll('\\s+', '_')}.png")
+        if (message.contains(articleCode)) {
+            KeywordUtil.markPassed("✔️ Imported correctly in row ${row}")
+        } else {
+            KeywordUtil.markFailed("❌ Row ${row} found, but article code doesn't match.")
+        }
+        break // encontrado, não precisa continuar
     }
-
-    // Volta para o login (faz o "logout")
-    WebUI.navigateToUrl(GlobalVariable.LOGIN_URL)
 }
 
 ```
