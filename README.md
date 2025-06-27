@@ -54,20 +54,29 @@ utils.ObjectReferenceValidator.validateAllTestObjectPaths()
 
 ```sh
 
-for (int row = 1; row <= rows_count; row++) {
-    TestObject cell = new TestObject('articleCheckRow')
-    cell.addProperty('xpath', ConditionType.EQUALS, "//*[@id='body_x_grid_grd']//tbody/tr[" + row + "]/td[contains(text(),'${articleCode}')]")
+List<Integer> userIndexes = [5, 2, 10, 3, 12, 16, 4, 1, 17, 6, 14]
+String evidencePath = RunConfiguration.getReportFolder() + "/Evidences/"
+def testData = findTestData(LoginConstants.CREDENTIALS_DATA_SHEET)
 
-    if (WebUI.verifyElementPresent(cell, 2, FailureHandling.OPTIONAL)) {
-        String message = WebUI.getText(cell)
+for (int rowIndex : userIndexes) {
+    String userName = testData.getValue(1, rowIndex)
 
-        if (message.contains(articleCode)) {
-            KeywordUtil.markPassed("✔️ Imported correctly in row ${row}")
-        } else {
-            KeywordUtil.markFailed("❌ Row ${row} found, but article code doesn't match.")
-        }
-        break // encontrado, não precisa continuar
+    LoginActions.LoginUser(LoginConstants.CREDENTIALS_DATA_SHEET, rowIndex)
+
+    WebUI.navigateToUrl(GlobalVariable.HOMEPAGE_URL)
+    UIActions.waitAndClick('menu_harmoni/buttonCatalogs')
+
+    boolean messageImport = UIActions.waitForElementPresent('menu_harmoni/buttonImportCatalogs')
+
+    if (messageImport) {
+        KeywordUtil.markFailed("❌ User ${userName} should NOT have access to Import Catalogs")
+        WebUI.takeScreenshot(evidencePath + "Error_${userName}_CanImportCatalogs.png")
+    } else {
+        KeywordUtil.markPassed("✅ User ${userName} correctly blocked from Import Catalogs")
+        WebUI.takeScreenshot(evidencePath + "Unauthorized_${userName}_CantImportCatalogs.png")
     }
+
+    WebUI.navigateToUrl(GlobalVariable.LOGIN_URL) // Faz logout
 }
 
 ```
