@@ -112,61 +112,11 @@ moduleStats.each { module, stats ->
 ```sh
 
 
-def moduleStats = [:].withDefault {
-    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0]
-}
-
-Files.walk(testCaseRoot)
-    .filter { Files.isRegularFile(it) && it.toString().endsWith(".tc") }
-    .each { Path filePath ->
-        def tagFound = 'needs-maintenance'
-
-        try {
-            def parser = new XmlParser(false, false)
-            def xml = parser.parse(filePath.toFile())
-
-            // Busca as tags
-            def tagsNode = xml.'Tags'
-            def tags = []
-
-            if (tagsNode && tagsNode[0]?.children()) {
-                tags = tagsNode[0].children()*.text().collect { it.trim().toLowerCase() }
-            }
-
-            if (tags.contains('maintenance')) {
-                tagFound = 'maintenance'
-            } else if (tags.contains('new-feature')) {
-                tagFound = 'new-feature'
-            }
-
-        } catch (Exception e) {
-            println "⚠️ Failed to parse: ${filePath.fileName} (${e.message})"
-        }
-
-        // Define o módulo pela primeira pasta
-        def relativePath = testCaseRoot.relativize(filePath)
-        def parts = relativePath.toString().split(Pattern.quote(File.separator))
-        def topFolder = parts.length > 1 ? parts[0] : "Root"
-
-        moduleStats[topFolder][tagFound] += 1
-        moduleStats[topFolder]['total'] += 1
+if (tagsNode && tagsNode[0]?.children()) {
+    tags = tagsNode[0].children().collect { tagNode ->
+        String tagValue = tagNode.text()
+        return tagValue.trim().toLowerCase()
     }
-
-// Mostrar no console
-println "\n📊 Test Case Maintenance Summary (based on .tc file tags)\n"
-
-moduleStats.each { module, stats ->
-    def reviewed = stats.maintenance + stats.'new-feature'
-    def pending = stats.'needs-maintenance'
-    def progress = stats.total > 0 ? (reviewed / stats.total * 100).round(2) : 0
-
-    println "📁 Module: ${module}"
-    println "  • Total Test Cases: ${stats.total}"
-    println "  • Maintenance: ${stats.maintenance}"
-    println "  • New Feature: ${stats.'new-feature'}"
-    println "  • Needs Maintenance: ${pending}"
-    println "  • Progress: ${progress}%\n"
 }
-
 ```
 
