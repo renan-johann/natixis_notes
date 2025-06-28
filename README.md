@@ -111,53 +111,49 @@ moduleStats.each { module, stats ->
 
 ```sh
 
-Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
-// Estrutura de contagem por pasta principal
-def moduleStats = [:].withDefault { 
-    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0] 
+def moduleStats = [:].withDefault {
+    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0]
 }
 
-// Percorre todos os arquivos .tc dentro da pasta "Test Cases"
 Files.walk(testCaseRoot)
     .filter { Files.isRegularFile(it) && it.toString().endsWith(".tc") }
     .each { Path filePath ->
-        def status = 'needs-maintenance' // default
-        try {
-            def dbFactory = DocumentBuilderFactory.newInstance()
-            def dBuilder = dbFactory.newDocumentBuilder()
-            def doc = dBuilder.parse(filePath.toFile())
-            doc.documentElement.normalize()
-            def tagNodes = doc.getElementsByTagName("Tag")
+        def tagFound = 'needs-maintenance'
 
-            if (tagNodes.getLength() > 0) {
-                for (int i = 0; i < tagNodes.getLength(); i++) {
-                    def tagValue = tagNodes.item(i).getTextContent().trim()
-                    if (tagValue == "maintenance") {
-                        status = "maintenance"
-                        break
-                    } else if (tagValue == "new-feature") {
-                        status = "new-feature"
-                        break
-                    }
-                }
+        try {
+            def parser = new XmlParser(false, false)
+            def xml = parser.parse(filePath.toFile())
+
+            // Busca as tags
+            def tagsNode = xml.'Tags'
+            def tags = []
+
+            if (tagsNode && tagsNode[0]?.children()) {
+                tags = tagsNode[0].children()*.text().collect { it.trim().toLowerCase() }
             }
+
+            if (tags.contains('maintenance')) {
+                tagFound = 'maintenance'
+            } else if (tags.contains('new-feature')) {
+                tagFound = 'new-feature'
+            }
+
         } catch (Exception e) {
-            status = "needs-maintenance"
+            println "⚠️ Failed to parse: ${filePath.fileName} (${e.message})"
         }
 
-        // Detecta o módulo (pasta principal)
+        // Define o módulo pela primeira pasta
         def relativePath = testCaseRoot.relativize(filePath)
         def parts = relativePath.toString().split(Pattern.quote(File.separator))
         def topFolder = parts.length > 1 ? parts[0] : "Root"
 
-        // Atualiza as estatísticas
-        moduleStats[topFolder][status] += 1
+        moduleStats[topFolder][tagFound] += 1
         moduleStats[topFolder]['total'] += 1
     }
 
-// Exibe o relatório no console
-println "\n📊 Test Case Maintenance Summary (based on .tc tags)\n"
+// Mostrar no console
+println "\n📊 Test Case Maintenance Summary (based on .tc file tags)\n"
 
 moduleStats.each { module, stats ->
     def reviewed = stats.maintenance + stats.'new-feature'
