@@ -47,24 +47,76 @@ class ObjectReferenceValidator {
 No console do Katalon, chama:
 
 ```sh
-utils.ObjectReferenceValidator.validateAllTestObjectPaths()
+
+@Keyword
+class AutomationStatus {
+    static final String MAINTENANCE = "maintenance"
+    static final String NEW_FEATURE = "new-feature"
+}
+
+AutomationStatus.MAINTENANCE
+
+AutomationStatusConstants
+
+AutomationStatusAnalyzer
+
 ```
 
 
 
 ```sh
+// Caminho da raiz do projeto
+Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
-String userName = testData.getValue(1, rowIndex)
-String role     = testData.getValue(4, rowIndex)  // 4ª coluna = Role
+// Palavras-chave válidas que representam status
+def maintenanceToken = "AutomationStatus.MAINTENANCE"
+def newFeatureToken = "AutomationStatus.NEW_FEATURE"
 
-// ...
+// Estatísticas agrupadas por pasta principal
+def moduleStats = [:].withDefault { 
+    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0] 
+}
 
-if (messageImport) {
-    KeywordUtil.markFailed("❌ User \"${userName}\" (${role}) SHOULD NOT have access to Import Catalogs")
-    WebUI.takeScreenshot(evidencePath + "ERROR_${userName}_${role}_CanImportCatalogs.png")
-} else {
-    KeywordUtil.markPassed("✅ User \"${userName}\" (${role}) correctly blocked from Import Catalogs")
-    WebUI.takeScreenshot(evidencePath + "Unauthorized_${userName}_${role}_CantImportCatalogs.png")
+// Percorre todos os arquivos de teste (.groovy)
+Files.walk(testCaseRoot)
+    .filter { Files.isRegularFile(it) && it.toString().endsWith(".groovy") }
+    .each { Path filePath ->
+        def lines = Files.readAllLines(filePath)
+        def status = 'needs-maintenance' // padrão, se nenhum status for detectado
+
+        lines.each { line ->
+            def trimmed = line.trim()
+            if (trimmed == maintenanceToken) {
+                status = 'maintenance'
+            } else if (trimmed == newFeatureToken) {
+                status = 'new-feature'
+            }
+        }
+
+        // Detecta a pasta principal (módulo)
+        def relativePath = testCaseRoot.relativize(filePath)
+        def parts = relativePath.toString().split(Pattern.quote(File.separator))
+        def topFolder = parts.length > 1 ? parts[0] : "Root"
+
+        // Atualiza os contadores
+        moduleStats[topFolder][status] += 1
+        moduleStats[topFolder]['total'] += 1
+    }
+
+// Exibe o relatório final no console
+println "\n📊 Test Case Maintenance Summary (based on AutomationStatus constants)\n"
+
+moduleStats.each { module, stats ->
+    def reviewed = stats.maintenance + stats.'new-feature'
+    def pending = stats.'needs-maintenance'
+    def progress = stats.total > 0 ? (reviewed / stats.total * 100).round(2) : 0
+
+    println "📁 Module: ${module}"
+    println "  • Total Test Cases: ${stats.total}"
+    println "  • Maintenance: ${stats.maintenance}"
+    println "  • New Feature: ${stats.'new-feature'}"
+    println "  • Needs Maintenance: ${pending}"
+    println "  • Progress: ${progress}%\n"
 }
 
 ```
