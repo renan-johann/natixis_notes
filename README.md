@@ -42,23 +42,10 @@ class ObjectReferenceValidator {
 }
 ```
 
-### Como usar:
-
-No console do Katalon, chama:
 
 ```sh
 
-@Keyword
-class AutomationStatus {
-    static final String MAINTENANCE = "maintenance"
-    static final String NEW_FEATURE = "new-feature"
-}
 
-AutomationStatus.MAINTENANCE
-
-AutomationStatusConstants
-
-AutomationStatusAnalyzer
 
 ```
 
@@ -105,6 +92,64 @@ Files.walk(testCaseRoot)
 
 // Exibe o relatório final no console
 println "\n📊 Test Case Maintenance Summary (based on AutomationStatus constants)\n"
+
+moduleStats.each { module, stats ->
+    def reviewed = stats.maintenance + stats.'new-feature'
+    def pending = stats.'needs-maintenance'
+    def progress = stats.total > 0 ? (reviewed / stats.total * 100).round(2) : 0
+
+    println "📁 Module: ${module}"
+    println "  • Total Test Cases: ${stats.total}"
+    println "  • Maintenance: ${stats.maintenance}"
+    println "  • New Feature: ${stats.'new-feature'}"
+    println "  • Needs Maintenance: ${pending}"
+    println "  • Progress: ${progress}%\n"
+}
+
+```
+
+
+```sh
+// Caminho raiz do projeto
+Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
+
+// Estatísticas por módulo (pasta principal)
+def moduleStats = [:].withDefault { 
+    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0] 
+}
+
+// Percorre todos os arquivos .tc (meta de cada Test Case)
+Files.walk(testCaseRoot)
+    .filter { Files.isRegularFile(it) && it.toString().endsWith(".tc") }
+    .each { Path filePath ->
+        def tagFound = 'needs-maintenance'
+
+        try {
+            def xml = new XmlSlurper().parse(filePath.toFile())
+            def tags = xml.Tags.Tag*.text()
+
+            if (tags.contains('maintenance')) {
+                tagFound = 'maintenance'
+            } else if (tags.contains('new-feature')) {
+                tagFound = 'new-feature'
+            }
+
+        } catch (Exception e) {
+            println "⚠️  Failed to parse: ${filePath.fileName} (${e.message})"
+        }
+
+        // Detecta pasta principal (módulo)
+        def relativePath = testCaseRoot.relativize(filePath)
+        def parts = relativePath.toString().split(Pattern.quote(File.separator))
+        def topFolder = parts.length > 1 ? parts[0] : "Root"
+
+        // Atualiza contagem
+        moduleStats[topFolder][tagFound] += 1
+        moduleStats[topFolder]['total'] += 1
+    }
+
+// Exibe resumo no console
+println "\n📊 Test Case Maintenance Summary (based on .tc tags)\n"
 
 moduleStats.each { module, stats ->
     def reviewed = stats.maintenance + stats.'new-feature'
