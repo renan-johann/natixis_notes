@@ -110,45 +110,53 @@ moduleStats.each { module, stats ->
 
 
 ```sh
-// Caminho raiz do projeto
+
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
-// Estatísticas por módulo (pasta principal)
+// Estrutura de contagem por pasta principal
 def moduleStats = [:].withDefault { 
     [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0] 
 }
 
-// Percorre todos os arquivos .tc (meta de cada Test Case)
+// Percorre todos os arquivos .tc dentro da pasta "Test Cases"
 Files.walk(testCaseRoot)
     .filter { Files.isRegularFile(it) && it.toString().endsWith(".tc") }
     .each { Path filePath ->
-        def tagFound = 'needs-maintenance'
-
+        def status = 'needs-maintenance' // default
         try {
-            def xml = new XmlSlurper().parse(filePath.toFile())
-            def tags = xml.Tags.Tag*.text()
+            def dbFactory = DocumentBuilderFactory.newInstance()
+            def dBuilder = dbFactory.newDocumentBuilder()
+            def doc = dBuilder.parse(filePath.toFile())
+            doc.documentElement.normalize()
+            def tagNodes = doc.getElementsByTagName("Tag")
 
-            if (tags.contains('maintenance')) {
-                tagFound = 'maintenance'
-            } else if (tags.contains('new-feature')) {
-                tagFound = 'new-feature'
+            if (tagNodes.getLength() > 0) {
+                for (int i = 0; i < tagNodes.getLength(); i++) {
+                    def tagValue = tagNodes.item(i).getTextContent().trim()
+                    if (tagValue == "maintenance") {
+                        status = "maintenance"
+                        break
+                    } else if (tagValue == "new-feature") {
+                        status = "new-feature"
+                        break
+                    }
+                }
             }
-
         } catch (Exception e) {
-            println "⚠️  Failed to parse: ${filePath.fileName} (${e.message})"
+            status = "needs-maintenance"
         }
 
-        // Detecta pasta principal (módulo)
+        // Detecta o módulo (pasta principal)
         def relativePath = testCaseRoot.relativize(filePath)
         def parts = relativePath.toString().split(Pattern.quote(File.separator))
         def topFolder = parts.length > 1 ? parts[0] : "Root"
 
-        // Atualiza contagem
-        moduleStats[topFolder][tagFound] += 1
+        // Atualiza as estatísticas
+        moduleStats[topFolder][status] += 1
         moduleStats[topFolder]['total'] += 1
     }
 
-// Exibe resumo no console
+// Exibe o relatório no console
 println "\n📊 Test Case Maintenance Summary (based on .tc tags)\n"
 
 moduleStats.each { module, stats ->
