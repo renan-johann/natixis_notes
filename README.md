@@ -111,7 +111,6 @@ moduleStats.each { module, stats ->
 
 ```sh
 
-
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
 def moduleStats = [:].withDefault {
@@ -167,5 +166,6 @@ moduleStats.each { module, stats ->
     println "  • Needs Maintenance: ${pending}"
     println "  • Progress: ${progress}%\n"
 }
+
 ```
 
