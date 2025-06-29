@@ -1,7 +1,15 @@
 ### Cria em: Keywords/utils/ObjectReferenceValidator.groovy
 
 ```sh
-*** IN ***
+
+html << """
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <h2 style="margin: 0;">Test Coverage Progress Report</h2>
+  <div class="overview" style="font-size: 14px;">
+    Modules: ${totalModules} | Test Cases: ${totalTestCases} | Average Progress: ${averageProgress}%
+  </div>
+</div>
+"""
 
 ```
 
