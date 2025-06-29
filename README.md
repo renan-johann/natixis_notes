@@ -62,22 +62,15 @@ Files.walk(testCaseRoot)
         moduleStats[topFolder]['total'] += 1
     }
 
-// Remove pastas que só tinham arquivos com tag skip
+// Remove folders where all test cases were skipped
 def foldersToRemove = moduleStats.findAll { k, v -> v.total == 0 }.keySet()
 foldersToRemove.each { moduleStats.remove(it) }
 
-// Ordenar por progresso crescente
-def sortedModules = moduleStats.sort { k, v ->
-    def reviewed = v.maintenance + v.'new-feature'
-    def total = v.total
-    total > 0 ? (reviewed / total) : 0
-}
-
 println "\n📈 Final Test Case Tag Summary:\n"
 
-int totalModules = sortedModules.size()
-int totalTestCases = sortedModules.values().sum { it.total }
-double totalProgress = sortedModules.values().sum {
+int totalModules = moduleStats.size()
+int totalTestCases = moduleStats.values().sum { it.total }
+double totalProgress = moduleStats.values().sum {
     def reviewed = it.maintenance + it.'new-feature'
     it.total > 0 ? (reviewed / it.total) : 0
 }
@@ -101,7 +94,7 @@ html << "Modules: ${totalModules}<br/>"
 html << "Total Test Cases: ${totalTestCases}<br/>"
 html << "Average Progress: ${averageProgress}%</p>"
 
-sortedModules.each { module, stats ->
+moduleStats.each { module, stats ->
     def reviewed = stats.maintenance + stats.'new-feature'
     def pending = stats.'needs-maintenance'
     def progress = stats.total > 0 ? ((reviewed / stats.total * 100) as int) : 0
@@ -115,14 +108,8 @@ sortedModules.each { module, stats ->
     println "  • Progress: ${progress}%"
     println "  • Remaining: ${remaining}%\n"
 
-    def barColor = "#4caf50"
-    def barText = "${progress}%"
-    if (progress == 100) {
-        barColor = "#2e7d32"  // Darker green
-        barText = "✅ Concluído"
-    } else if (progress < 30) {
-        barColor = "#e53935"  // Red
-    }
+    def barColor = (progress == 100) ? "#2e7d32" : "#4caf50"
+    def barText = (progress == 100) ? "✅ Concluído" : "${progress}%"
 
     html << "<div class='module'>"
     html << "<strong>📁 ${module}</strong><br/>"
