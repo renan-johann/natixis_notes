@@ -14,26 +14,23 @@
 
 ```sh
 
+
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
 def moduleStats = [:].withDefault {
     [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0]
 }
 
-// Lista apenas os diretórios diretamente dentro de "Test Cases"
-Files.newDirectoryStream(testCaseRoot).each { Path moduleDir ->
-    if (!Files.isDirectory(moduleDir)) return
-
-    String moduleName = moduleDir.fileName.toString()
-
-    Files.newDirectoryStream(moduleDir).each { Path testCaseFile ->
-        if (!Files.isRegularFile(testCaseFile) || !testCaseFile.toString().endsWith(".tc")) return
-
+Files.walk(testCaseRoot)
+    .filter { 
+        Files.isRegularFile(it) && it.toString().endsWith(".tc")
+    }
+    .each { Path filePath ->
         def tagFound = 'needs-maintenance'
 
         try {
-            def content = new String(Files.readAllBytes(testCaseFile), "UTF-8")
-            def tagMatches = content.findAll(/<tag>(.*?)<\/tag>/i)
+            def content = new String(Files.readAllBytes(filePath), "UTF-8")
+            def tagMatches = content.findAll(/<tag>(.*?)<\/tag>/i)  // case-insensitive tag
 
             def tags = tagMatches.collect { match ->
                 match.replaceAll(/<\/?tag>/i, "").trim().toLowerCase()
@@ -46,13 +43,16 @@ Files.newDirectoryStream(testCaseRoot).each { Path moduleDir ->
             }
 
         } catch (Exception e) {
-            println "⚠️ Failed to parse: ${testCaseFile.fileName} (${e.message})"
+            println "⚠️ Failed to parse: ${filePath.fileName} (${e.message})"
         }
 
-        moduleStats[moduleName][tagFound] += 1
-        moduleStats[moduleName]['total'] += 1
+        def relativePath = testCaseRoot.relativize(filePath)
+        def parts = relativePath.toString().split(Pattern.quote(File.separator))
+        def topFolder = parts.length > 1 ? parts[0] : "Root"
+
+        moduleStats[topFolder][tagFound] += 1
+        moduleStats[topFolder]['total'] += 1
     }
-}
 
 println "\n📈 Final Test Case Tag Summary:\n"
 
