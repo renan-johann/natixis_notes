@@ -17,7 +17,7 @@
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
 def moduleStats = [:].withDefault {
-    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0, skipped: 0]
+    [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0]
 }
 
 Files.walk(testCaseRoot)
@@ -26,7 +26,7 @@ Files.walk(testCaseRoot)
     }
     .each { Path filePath ->
         def tagFound = 'needs-maintenance'
-        def isScript = false
+        def shouldSkip = false
 
         try {
             def content = new String(Files.readAllBytes(filePath), "UTF-8")
@@ -37,8 +37,8 @@ Files.walk(testCaseRoot)
                 tags << matcher.group(1).trim().toLowerCase()
             }
 
-            if (tags.contains('script')) {
-                isScript = true
+            if (tags.contains('skip')) {
+                shouldSkip = true
             } else if (tags.contains('maintenance')) {
                 tagFound = 'maintenance'
             } else if (tags.contains('new-feature')) {
@@ -49,21 +49,20 @@ Files.walk(testCaseRoot)
             println "⚠️ Failed to parse: ${filePath.fileName} (${e.message})"
         }
 
+        if (shouldSkip) {
+            println "⏭️ Skipping ${filePath.fileName} (tagged as 'skip')"
+            return
+        }
+
         def relativePath = testCaseRoot.relativize(filePath)
         def parts = relativePath.toString().split(Pattern.quote(File.separator))
         def topFolder = parts.length > 1 ? parts[0] : "Root"
-
-        if (isScript) {
-            println "⏭️ Skipping ${filePath.fileName} (tagged as 'script')"
-            moduleStats[topFolder]['skipped'] += 1
-            return
-        }
 
         moduleStats[topFolder][tagFound] += 1
         moduleStats[topFolder]['total'] += 1
     }
 
-// 🔍 Remove folders where all test cases were skipped (only 'script' tags)
+// 🧹 Remove folders com 0 testes válidos
 def foldersToRemove = moduleStats.findAll { module, stats ->
     stats.total == 0
 }.keySet()
