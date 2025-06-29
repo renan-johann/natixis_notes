@@ -62,25 +62,46 @@ Files.walk(testCaseRoot)
         moduleStats[topFolder]['total'] += 1
     }
 
-// 🧹 Remove folders com 0 testes válidos
-def foldersToRemove = moduleStats.findAll { module, stats ->
-    stats.total == 0
-}.keySet()
-
+// Remove pastas que só tinham arquivos com tag skip
+def foldersToRemove = moduleStats.findAll { k, v -> v.total == 0 }.keySet()
 foldersToRemove.each { moduleStats.remove(it) }
 
+// Ordenar por progresso crescente
+def sortedModules = moduleStats.sort { k, v ->
+    def reviewed = v.maintenance + v.'new-feature'
+    def total = v.total
+    total > 0 ? (reviewed / total) : 0
+}
+
 println "\n📈 Final Test Case Tag Summary:\n"
+
+int totalModules = sortedModules.size()
+int totalTestCases = sortedModules.values().sum { it.total }
+double totalProgress = sortedModules.values().sum {
+    def reviewed = it.maintenance + it.'new-feature'
+    it.total > 0 ? (reviewed / it.total) : 0
+}
+int averageProgress = totalModules > 0 ? ((totalProgress / totalModules) * 100) as int : 0
+
+println "📌 Overview:"
+println "  • Modules: ${totalModules}"
+println "  • Test Cases: ${totalTestCases}"
+println "  • Average Progress: ${averageProgress}%\n"
 
 def html = new StringBuilder()
 html << "<html><head><style>"
 html << "body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }"
 html << ".module { background: #fff; margin-bottom: 16px; padding: 12px; border-radius: 8px; box-shadow: 0 0 5px #ccc; }"
 html << ".bar { height: 20px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }"
-html << ".fill { height: 100%; background: #4caf50; text-align: right; padding-right: 5px; color: white; font-size: 12px; }"
+html << ".fill { height: 100%; text-align: right; padding-right: 5px; color: white; font-size: 12px; }"
 html << "</style></head><body>"
 html << "<h2>📊 Test Case Maintenance Report</h2>"
+html << "<p><strong>📌 Overview:</strong><br/>"
+html << "Modules: ${totalModules}<br/>"
+html << "Total Test Cases: ${totalTestCases}<br/>"
+html << "Average Progress: ${averageProgress}%</p>"
 
-moduleStats.each { module, stats ->
+sortedModules.each { module, stats ->
     def reviewed = stats.maintenance + stats.'new-feature'
     def pending = stats.'needs-maintenance'
     def progress = stats.total > 0 ? ((reviewed / stats.total * 100) as int) : 0
@@ -94,10 +115,19 @@ moduleStats.each { module, stats ->
     println "  • Progress: ${progress}%"
     println "  • Remaining: ${remaining}%\n"
 
+    def barColor = "#4caf50"
+    def barText = "${progress}%"
+    if (progress == 100) {
+        barColor = "#2e7d32"  // Darker green
+        barText = "✅ Concluído"
+    } else if (progress < 30) {
+        barColor = "#e53935"  // Red
+    }
+
     html << "<div class='module'>"
     html << "<strong>📁 ${module}</strong><br/>"
     html << "✔️ Maintenance: ${stats.maintenance} | ✨ New Feature: ${stats.'new-feature'} | 🛠️ Needs Maintenance: ${pending} | Total: ${stats.total}<br/>"
-    html << "<div class='bar'><div class='fill' style='width:${progress}%;'>${progress}%</div></div>"
+    html << "<div class='bar'><div class='fill' style='width:${progress}%; background:${barColor}'>${barText}</div></div>"
     html << "</div>"
 }
 
@@ -108,6 +138,7 @@ Files.createDirectories(reportPath.getParent())
 Files.write(reportPath, html.toString().getBytes("UTF-8"))
 
 println "📄 HTML report saved at: ${reportPath.toAbsolutePath()}"
+println "📎 [Abrir relatório HTML](${reportPath.toAbsolutePath().toUri()})"
 
 ```
 
