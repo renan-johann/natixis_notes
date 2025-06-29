@@ -13,7 +13,6 @@
 ```
 
 ```sh
-
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
 
 def moduleStats = [:].withDefault {
@@ -26,6 +25,7 @@ Files.walk(testCaseRoot)
     }
     .each { Path filePath ->
         def tagFound = 'needs-maintenance'
+        def shouldSkip = false
 
         try {
             def content = new String(Files.readAllBytes(filePath), "UTF-8")
@@ -36,7 +36,9 @@ Files.walk(testCaseRoot)
                 tags << matcher.group(1).trim().toLowerCase()
             }
 
-            if (tags.contains('maintenance')) {
+            if (tags.contains('script')) {
+                shouldSkip = true
+            } else if (tags.contains('maintenance')) {
                 tagFound = 'maintenance'
             } else if (tags.contains('new-feature')) {
                 tagFound = 'new-feature'
@@ -44,6 +46,11 @@ Files.walk(testCaseRoot)
 
         } catch (Exception e) {
             println "⚠️ Failed to parse: ${filePath.fileName} (${e.message})"
+        }
+
+        if (shouldSkip) {
+            println "⏭️ Skipping ${filePath.fileName} (tagged as 'script')"
+            return
         }
 
         def relativePath = testCaseRoot.relativize(filePath)
