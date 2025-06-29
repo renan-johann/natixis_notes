@@ -15,72 +15,60 @@
 ```sh
 
 Path testCaseRoot = Paths.get(RunConfiguration.getProjectDir(), "Test Cases")
-Path loginFolder = testCaseRoot.resolve("login") // <<< apenas login
 
 def moduleStats = [:].withDefault {
     [maintenance: 0, 'new-feature': 0, 'needs-maintenance': 0, total: 0]
 }
 
-Files.walk(loginFolder)
-    .filter { Files.isRegularFile(it) && it.toString().endsWith(".tc") }
-    .each { Path filePath ->
+// Lista apenas os diretórios diretamente dentro de "Test Cases"
+Files.newDirectoryStream(testCaseRoot).each { Path moduleDir ->
+    if (!Files.isDirectory(moduleDir)) return
+
+    String moduleName = moduleDir.fileName.toString()
+
+    Files.newDirectoryStream(moduleDir).each { Path testCaseFile ->
+        if (!Files.isRegularFile(testCaseFile) || !testCaseFile.toString().endsWith(".tc")) return
+
         def tagFound = 'needs-maintenance'
 
-        println "🔍 Analyzing file: ${filePath}"
-
         try {
-            def content = new String(Files.readAllBytes(filePath), "UTF-8")
-            println "📄 Raw content snippet:\n" + content.take(200) + "\n..."
-
-            // CASE INSENSITIVE REGEX
-            def tagMatches = content.findAll(/(?i)<tag>(.*?)<\/tag>/)
-            println "🏷️ Found raw tag matches: ${tagMatches}"
+            def content = new String(Files.readAllBytes(testCaseFile), "UTF-8")
+            def tagMatches = content.findAll(/<tag>(.*?)<\/tag>/i)
 
             def tags = tagMatches.collect { match ->
-                def inner = match.replaceAll(/(?i)<\/?tag>/, "").toLowerCase().trim()
-                return inner
+                match.replaceAll(/<\/?tag>/i, "").trim().toLowerCase()
             }
-
-            println "✅ Cleaned tags: ${tags}"
 
             if (tags.contains('maintenance')) {
                 tagFound = 'maintenance'
-                println "🛠️ Tag classified as: maintenance"
             } else if (tags.contains('new-feature')) {
                 tagFound = 'new-feature'
-                println "🆕 Tag classified as: new-feature"
-            } else {
-                println "⚠️ No recognized tag. Will count as needs-maintenance."
             }
 
         } catch (Exception e) {
-            println "❌ Failed to parse: ${filePath.fileName} (${e.message})"
+            println "⚠️ Failed to parse: ${testCaseFile.fileName} (${e.message})"
         }
 
-        def relativePath = testCaseRoot.relativize(filePath)
-        def parts = relativePath.toString().split(Pattern.quote(File.separator))
-        def topFolder = parts.length > 1 ? parts[0] : "Root"
-
-        println "📂 Module (top folder): ${topFolder}"
-
-        moduleStats[topFolder][tagFound] += 1
-        moduleStats[topFolder]['total'] += 1
-        println "📊 Updated stats for ${topFolder}: ${moduleStats[topFolder]}\n"
+        moduleStats[moduleName][tagFound] += 1
+        moduleStats[moduleName]['total'] += 1
     }
+}
 
 println "\n📈 Final Test Case Tag Summary:\n"
 
 moduleStats.each { module, stats ->
     def reviewed = stats.maintenance + stats.'new-feature'
     def pending = stats.'needs-maintenance'
-    def progress = stats.total > 0 ? (reviewed / stats.total * 100).round(2) : 0
+    def progress = stats.total > 0 ? ((reviewed / stats.total * 100) as int) : 0
+    def remaining = stats.total > 0 ? ((pending / stats.total * 100) as int) : 0
 
     println "📁 Module: ${module}"
     println "  • Total Test Cases: ${stats.total}"
     println "  • Maintenance: ${stats.maintenance}"
     println "  • New Feature: ${stats.'new-feature'}"
     println "  • Needs Maintenance: ${pending}"
-    println "  • Progress: ${progress}%\n"
+    println "  • Progress: ${progress}%"
+    println "  • Remaining: ${remaining}%\n"
 }
 
 ```
